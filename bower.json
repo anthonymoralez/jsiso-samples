@@ -1,0 +1,23 @@
+{
+  "name": "jsiso-samples",
+  "version": "0.0.1",
+  "homepage": "http://jsiso.com",
+  "authors": [
+    "Iain Hamilton <iain@beakable.com>",
+    "Edward Smyth <edward@zoby.eu>"
+  ],
+  "description": "samples of jsiso based games.",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "requirejs": "~2.1.11",
+    "domReady": "git@github.com:requirejs/domReady",
+    "jsiso": "git@github.com:anthonymoralez/isometric"
+  }
+}
