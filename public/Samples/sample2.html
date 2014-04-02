@@ -74,10 +74,10 @@ THE SOFTWARE.
         var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
         var imgLoader = new ImageLoader(); // Used for loading all images used within game
 
-        XML.loadXML('../XMLFiles.php?folder=/ground/'); // PHP is used to output a list of images within the directory for easier loading
+        XML.loadXML('../XMLFiles?folder=/ground/'); // PHP is used to output a list of images within the directory for easier loading
         var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
 
-        XML.loadXML('../XMLFiles.php?folder=/players/');
+        XML.loadXML('../XMLFiles?folder=/players/');
         var playerImages = imgLoader.loadImageArray(XML.getContent('files','file'), true);
 
         var loadTimer = setInterval(loadAll, 100);
