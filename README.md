@@ -1,4 +1,4 @@
-HTML5 Canvas Tile Engine
+HTML5 Canvas Tile Engine -- Samples
 =========
 
 ![JSiso](http://jsiso.com/jsiso.png)
