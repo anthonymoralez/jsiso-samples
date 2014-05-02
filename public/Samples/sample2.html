@@ -1,6 +1,6 @@
 <!--
 /*  
-Copyright (c) 2013 Iain Hamilton & Edward Smyth
+Copyright (c) 2013 Iain Hamilton
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. 
 
 - Author : Iain M Hamilton - <iain@beakable.com> - http://www.beakable.com
-           Edward Smyth
 
   Twitter: @beakable
 
@@ -40,7 +39,7 @@ THE SOFTWARE.
     </style>
     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
     
-    <script data-main="/js/deps/jsiso-samples.js" src="/js/deps/requirejs/require.js"></script>
+    <script data-main="/js/config.js" src="/js/requirejs/require.js"></script>
 
     <script type="text/javascript">
 
@@ -51,7 +50,7 @@ THE SOFTWARE.
       'jsiso/xml/XMLPopulate',
       'jsiso/tile/Field',
       'jsiso/pathfind/pathfind',
-      'domReady/domReady!'
+      'requirejs/domReady!'
     ],
     function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField, pathfind) {
 
@@ -74,58 +73,51 @@ THE SOFTWARE.
         var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
         var imgLoader = new ImageLoader(); // Used for loading all images used within game
 
-        XML.loadXML('../XMLFiles?folder=/ground/'); // PHP is used to output a list of images within the directory for easier loading
+        XML.loadXML('/XMLFiles.php?folder=/ground/'); // PHP is used to output a list of images within the directory for easier loading
         var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
 
-        XML.loadXML('../XMLFiles?folder=/players/');
+        XML.loadXML('/XMLFiles.php?folder=/players/');
         var playerImages = imgLoader.loadImageArray(XML.getContent('files','file'), true);
 
-        var loadTimer = setInterval(loadAll, 100);
+        XML.loadXML('sample2.xml'); // Load the map 
 
-        function loadAll() {
-          if (imgLoader.loaded === imgLoader.loading) {
-            XML.loadXML('sample2.xml'); // Load the map 
-
-            clearInterval(loadTimer);
-            var game = new main(0, 0, 10, 10, playerImages);  // X & Y drawing position, and tile span to draw 
+        imgLoader.onload(function () {
+          var game = new main(0, 0, 10, 10, playerImages);  // X & Y drawing position, and tile span to draw 
             
-            game.init({
-              layers: [
-                game.createLayer({
-                  title: "Graphics",
-                  layout: XML.getContent('ground_map','row'),
-                  graphics: groundImages.files,
-                  graphicsDictionary: groundImages.dictionary, 
-                  heightMap: {
-                    map: XML.getContent('ground_height','row'),
-                    offset: 0,
-                    heightTile: groundImages.files["blank-block.png"],
-                  },
-                  height: 100,
-                  width: 50,
-                  applyInteractions: true,
-                  shadow: {
-                    offset: 20, // Offset is the same height as the stack tile
-                    verticalColor: 'rgba(5, 5, 30, 0.4)',
-                    horizontalColor: 'rgba(6, 5, 50, 0.5)'
-                  }
-                }),
-                game.createLayer({
-                  title: "AI",
-                  layout: XML.getContent('object_map','row'),
-                  heightMap: {
-                    map: XML.getContent('ground_height','row'),
-                    offset: 20, // Offset is the same height as the  graphics stack tile
-                    heightMapOnTop: true
-                  },
-                  height: 100,
-                  width: 50,
-                  applyInteractions: true
-                })
-              ],
-            });
-          }
-        }
+          game.init(
+            [{
+              title: "Graphics",
+              layout: XML.getContent('ground_map','row'),
+              graphics: groundImages.files,
+              graphicsDictionary: groundImages.dictionary, 
+              heightMap: {
+                map: XML.getContent('ground_height','row'),
+                offset: 0,
+                heightTile: groundImages.files["blank-block.png"],
+              },
+              tileHeight: 50,
+              tileWidth: 100,
+              applyInteractions: true,
+              shadow: {
+                offset: 20, // Offset is the same height as the stack tile
+                verticalColor: '(5, 5, 30, 0.4)',
+                horizontalColor: '(6, 5, 50, 0.5)'
+              }
+            },
+            {
+              title: "AI",
+              layout: XML.getContent('object_map','row'),
+              heightMap: {
+                map: XML.getContent('ground_height','row'),
+                offset: 20, // Offset is the same height as the  graphics stack tile
+                heightMapOnTop: true
+              },
+              tileHeight: 50,
+              tileWidth: 100,
+              applyInteractions: true
+            }
+          ]);
+        });
       }
 
 
@@ -166,7 +158,7 @@ THE SOFTWARE.
           });
         });  
         
-        this.draw = function() {
+        function draw() {
           context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
   		    if(calculatePaths === 100) { // Calculate AI paths every 100 ticks
             enemy.map(function(e) {
@@ -205,32 +197,27 @@ THE SOFTWARE.
           }
           
           calculatePaths += 1;
-          requestAnimFrame(self.draw);
+          requestAnimFrame(draw);
         }
         
-        this.createLayer = function(settings) {
-          var layer = new TileField(context, settings.height, settings.width, CanvasControl().height, CanvasControl().width, settings.layout, settings.graphics, settings.graphicsDictionary);
-            layer.applyHeightShadow(true, settings.shadow);
-          layer.setupProperties(settings);
-          layer.stackTiles(settings.heightMap);
-          layer.align("h-center", CanvasControl().width, xrange, 0); // Center canvas drawing X
-          layer.align("v-center", CanvasControl().height, yrange, 0); // Center canvas drawing Y
-          return layer;
+        return {
+          init: function(layers) {
+            for (var i = 0; i < 0 + layers.length; i++) {
+              mapLayers[i] = new TileField(context, CanvasControl().height, CanvasControl().width);
+              mapLayers[i].setup(layers[i]);
+              mapLayers[i].align("h-center", CanvasControl().width, xrange, 0);
+              mapLayers[i].align("v-center", CanvasControl().height, yrange, 0);
+            };
+            setInterval( function(){
+              enemy.push({
+                image: playerImages.files["enemy3.png"],
+                xPos: enemyStart[0],
+                yPos: enemyStart[1]
+              });
+            }, 2500); // Create new enemy AI every 2.5 seconds
+            draw();
+          }
         }
-
-
-        this.init = function(settings) {
-          mapLayers = settings.layers;
-          this.draw();
-          setInterval( function(){
-            enemy.push({
-              image: playerImages.files["enemy3.png"],
-              xPos: enemyStart[0],
-              yPos: enemyStart[1]
-            });
-          }, 2500); // Create new enemy AI every 2.5 seconds
-        }
-        
       }
 
       launch();

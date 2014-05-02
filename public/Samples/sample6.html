@@ -40,7 +40,7 @@ THE SOFTWARE.
     </style>
     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
     
-    <script data-main="/js/deps/jsiso-samples.js" src="/js/deps/requirejs/require.js"></script>
+    <script data-main="/js/config.js" src="/js/requirejs/require.js"></script>
 
     <script type="text/javascript">
 
@@ -53,7 +53,7 @@ THE SOFTWARE.
       'jsiso/pathfind/pathfind',
       'jsiso/particles/EffectLoader',
       'jsiso/utils',
-      'domReady/domReady!'
+      'requirejs/domReady!'
     ],
     function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField, pathfind, EffectLoader, utils) {
 
@@ -77,44 +77,30 @@ THE SOFTWARE.
         var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
         var imgLoader = new ImageLoader(); // Used for loading all images used within game
 
-        XML.loadXML('../XMLFiles?folder=/platform/'); // PHP is used to output a list of images within the directory for easier loading
+        XML.loadXML('/XMLFiles.php?folder=/platform/'); // PHP is used to output a list of images within the directory for easier loading
         var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
-
-
-        var loadTimer = setInterval(loadAll, 100);
-
-        function loadAll() {
-          if (imgLoader.loaded === imgLoader.loading) {
-            XML.loadXML('sample6.xml'); // Load the map 
-
-            clearInterval(loadTimer);
-            var game = new main(0, 0, 16, 18);  // X & Y drawing position, and tile span to draw 
-            
-            game.init({
-              layers: [
-                game.createLayer({
-                  title: "LayerOne",
-                  layout: XML.getContent('field_one','row'),
-                  graphics: groundImages.files,
-                  graphicsDictionary: groundImages.dictionary, 
-                  isometric: false, // Flag used to layout grid in non Isometric format
-                  height: 40,
-                  width: 40,
-                  zeroIsBlank: true
-                })
-              ],
-            });
-          }
-        }
+        XML.loadXML('sample6.xml'); // Load the map 
+        
+        imgLoader.onload(function() {
+          var game = new main(0, 0, 16, 18);  // X & Y drawing position, and tile span to draw 
+          game.init([{
+            title: "LayerOne",
+            layout: XML.getContent('field_one','row'),
+            graphics: groundImages.files,
+            graphicsDictionary: groundImages.dictionary, 
+            isometric: false, // Flag used to layout grid in non Isometric format
+            tileHeight: 40,
+            tileWidth: 40,
+            zeroIsBlank: true
+          }])
+        });
       }
 
       function main(x, y, xrange, yrange) {
     
-        var self = this;
         var mapLayers = [];
         var player = {};
         var keyInput = []; // Array for storing current directions pressed
-
 
         // -- Player Object contains some simple settings for moving and jumping/falling
         function PlayerObject(x, y, tileWidth, tileHeight) {
@@ -224,7 +210,7 @@ THE SOFTWARE.
           }
         });
 
-        this.draw = function() {
+        function draw() {
           context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
           var pos = player.getPos();
           for (i = x; i < 0 + xrange; i++) {
@@ -240,21 +226,19 @@ THE SOFTWARE.
             player.draw(context);
             player.move();
           }
-          requestAnimFrame(self.draw);
+          requestAnimFrame(draw);
         }
         
-        this.createLayer = function(settings) {
-          var layer = new TileField(context, settings.height, settings.width, CanvasControl().height, CanvasControl().width, settings.layout, settings.graphics, settings.graphicsDictionary);
-          layer.setupProperties(settings);
-          return layer;
+        return {
+          init: function(layers) {
+            for (var i = 0; i < 0 + layers.length; i++) {
+              mapLayers[i] = new TileField(context, CanvasControl().height, CanvasControl().width);
+              mapLayers[i].setup(layers[i]);
+            };
+            player = new PlayerObject(20, 20, 40, 40);
+            draw();
+          }
         }
-
-        this.init = function(settings) {
-          mapLayers = settings.layers;
-          player = new PlayerObject(20, 20, 40, 40);
-          this.draw();
-        }
-
       }
 
       launch();

@@ -1,6 +1,6 @@
 <!--
 /*  
-Copyright (c) 2013 Iain Hamilton & Edward Smyth
+Copyright (c) 2013 Iain Hamilton
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. 
 
 - Author : Iain M Hamilton - <iain@beakable.com> - http://www.beakable.com
-           Edward Smyth
 
   Twitter: @beakable
 
@@ -40,7 +39,7 @@ THE SOFTWARE.
     </style>
     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
 
-    <script data-main="/js/deps/jsiso-samples.js" src="/js/deps/requirejs/require.js"></script>
+    <script data-main="/js/config.js" src="/js/requirejs/require.js"></script>
 
     <script type="text/javascript">
 
@@ -50,7 +49,7 @@ THE SOFTWARE.
       'jsiso/img/ImageLoader',
       'jsiso/xml/XMLPopulate',
       'jsiso/tile/Field',
-      'domReady/domReady!'
+      'requirejs/domReady!'
     ],
     function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField) {
 
@@ -72,40 +71,29 @@ THE SOFTWARE.
         var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
         var imgLoader = new ImageLoader(); // Used for loading all images used within game
 
-        XML.loadXML('../XMLFiles?folder=/space/'); // PHP is used to output a list of images within the directory for easier loading
+        XML.loadXML('/XMLFiles.php?folder=/space/'); // PHP is used to output a list of images within the directory for easier loading
         var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'));
+        
+        XML.loadXML('sample5.xml'); // Load the map
 
-
-        var loadTimer = setInterval(loadAll, 100);
-
-        function loadAll() {
-          if (imgLoader.loaded === imgLoader.loading) {
-            XML.loadXML('sample5.xml'); // Load the map 
-
-            clearInterval(loadTimer);
-            var game = new main(0, 0, 8, 8);  // X & Y drawing position, and tile span to draw 
+        imgLoader.onload(function () {
+          var game = new main(0, 0, 8, 8);  // X & Y drawing position, and tile span to draw 
             
-            game.init({
-              layers: [
-                game.createLayer({
-                  title: "LayerOne",
-                  layout: XML.getContent('field_one','row'),
-                  graphics: groundImages.files,
-                  graphicsDictionary: groundImages.dictionary, 
-                  isometric: false, // Flag used to layout grid in non isometric format
-                  height: 80,
-                  width: 80,
-                  applyInteractions: true
-                })
-              ],
-            });
-          }
-        }
+          game.init([{
+            title: "LayerOne",
+            layout: XML.getContent('field_one','row'),
+            graphics: groundImages.files,
+            graphicsDictionary: groundImages.dictionary, 
+            isometric: false, // Flag used to layout grid in non isometric format
+            tileHeight: 80,
+            tileWidth: 80,
+            applyInteractions: true
+          }])
+        });
       }
 
       function main(x, y, xrange, yrange) {
         
-        var self = this;
         var mapLayers = [];
 
         var context = CanvasControl.create("canavas", 640, 640, {
@@ -130,27 +118,25 @@ THE SOFTWARE.
           });
         }); 
 
-        this.draw = function() {
+        function draw() {
           context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
           for (i = x; i < 0 + xrange; i++) {
             for (j = y; j < 0 + yrange; j++) {
               mapLayers[0].draw(i,j);
             }
           }
-          requestAnimFrame(self.draw);
+          requestAnimFrame(draw);
         }
         
-        this.createLayer = function(settings) {
-          var layer = new TileField(context, settings.height, settings.width, CanvasControl().height, CanvasControl().width, settings.layout, settings.graphics, settings.graphicsDictionary);
-          layer.setupProperties(settings);
-          return layer;
+        return {
+          init: function(layers) {
+            for (var i = 0; i < 0 + layers.length; i++) {
+              mapLayers[i] = new TileField(context, CanvasControl().height, CanvasControl().width);
+              mapLayers[i].setup(layers[i]);
+            };
+            draw();
+          }
         }
-
-        this.init = function(settings) {
-          mapLayers = settings.layers;
-          this.draw();
-        }
-        
       }
 
       launch();
