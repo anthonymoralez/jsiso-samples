@@ -29,12 +29,17 @@ Currently contained features are:
 
 Setup Instructions:
 -------------
+0. Install yeoman `npm install -g yo`
+1. `npm install`
+2. `bower install`
+3. `npm start`
 
-1: In each of the samples you'll see something like: ```<script data-main="../js/deps/jsiso.js" src="../js/deps/requirejs/require.js"></script>```. These two paths will need to be correct in order for JsIso to work.
+Notes:
+1. In each of the samples you'll see something like: ```<script data-main="../js/deps/jsiso.js" src="../js/deps/requirejs/require.js"></script>```. These two paths will need to be correct in order for JsIso to work.
 
-2: Throughout the samples it makes use of an express.js app to read a image directory and output a XML list of image files``` XML.loadXML('../XMLFiles?folder=/ground/');```. This path will also need to be correct or you will need to pass an array of image paths manually through to the image loader ```imgLoader.loadImageArray(XML.getContent('files','file'), true);```. Note: The app adds /img/ itself for security, enforcing only reading of the img directory.
+2. Throughout the samples it makes use of an express.js app to read a image directory and output a XML list of image files``` XML.loadXML('../XMLFiles?folder=/ground/');```. This path will also need to be correct or you will need to pass an array of image paths manually through to the image loader ```imgLoader.loadImageArray(XML.getContent('files','file'), true);```. Note: The app adds /img/ itself for security, enforcing only reading of the img directory.
 
-3: That should be everything.
+3. That should be everything.
 
 
 Particles
