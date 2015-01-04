@@ -204,12 +204,12 @@ THE SOFTWARE.
           context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
           if(calculatePaths === 100) { // Calculate AI paths every 100 ticks
             enemy.map(function(e) {
-              pathfind(e, [e.xPos, e.yPos], [enemyEnd[0], enemyEnd[1]], mapLayers[0].getHeightLayout(), false, function (data) { 
+              pathfind(e.id, [e.xPos, e.yPos], [enemyEnd[0], enemyEnd[1]], mapLayers[0].getHeightLayout(), false, true).then(function (data) {
                 if (data.length > 0 && data[1] !== undefined) {
                   e.xPos = data[1].x;
                   e.yPos = data[1].y;
                 }
-              }, true);
+              });
             });
             calculatePaths = 0;
             enemy = enemy.filter(function(e) { 
@@ -258,19 +258,18 @@ THE SOFTWARE.
             for (var i = 0; i < 0 + layers.length; i++) {
               mapLayers[i] = new TileField(context, CanvasControl().height, CanvasControl().width);
               mapLayers[i].setup(layers[i]);
-
-              // -- Flip and rotate to match the Tiled draw method --
+              mapLayers[i].align("h-center", CanvasControl().width, xrange, 0);
+              mapLayers[i].align("v-center", CanvasControl().height, yrange, 0);
+            };
             setInterval( function(){
               enemy.push({
                 image: playerImages.files["main.png"],
+                id: enemy.length,
                 xPos: enemyStart[0],
                 yPos: enemyStart[1]
               });
             }, 2500); // Create new enemy AI every 2.5 seconds
 
-              mapLayers[i].align("h-center", CanvasControl().width, xrange, 0);
-              mapLayers[i].align("v-center", CanvasControl().height, yrange, 0);
-            };
             draw();
           }
         }  

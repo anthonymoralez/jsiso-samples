@@ -166,12 +166,12 @@ THE SOFTWARE.
           context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
   		    if(calculatePaths === 100) { // Calculate AI paths every 100 ticks
             enemy.map(function(e) {
-              pathfind(e, [e.xPos, e.yPos], [enemyEnd[0], enemyEnd[1]], mapLayers[0].getHeightLayout(), false, function (data) { 
+              pathfind(e.id, [e.xPos, e.yPos], [enemyEnd[0], enemyEnd[1]], mapLayers[0].getHeightLayout(), false, true).then(function (data) { 
                 if (data.length > 0 && data[1] !== undefined) {
                   e.xPos = data[1].x;
                   e.yPos = data[1].y;
                 }
-              }, true);
+              });
             });
             calculatePaths = 0;
             enemy = enemy.filter(function(e) { 
@@ -215,6 +215,7 @@ THE SOFTWARE.
 
               setInterval( function(){
                 enemy.push({
+                  id: enemy.length,
                   image: playerImages.files["enemy3.png"],
                   xPos: enemyStart[0],
                   yPos: enemyStart[1]

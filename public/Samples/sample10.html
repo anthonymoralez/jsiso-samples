@@ -132,20 +132,6 @@ THE SOFTWARE.
             
           tileEngine.init(
             [{
-              layout: objMap,
-              heightMap: {
-                map: heightImg,
-                heightMapOnTop: true,
-                offset: 100
-              },
-              graphics: objects.files,
-              graphicsDictionary: objects.dictionary,
-              zeroIsBlank: true,
-              applyInteractions: true,
-              tileHeight: 100,
-              tileWidth: 200
-            },
-            {
               layout: tileImg,
               heightMap: {
                 map: heightImg,
@@ -181,7 +167,7 @@ THE SOFTWARE.
 
         var input = new CanvasInput(document, CanvasControl());
         input.mouse_move(function(coords) {
-          var tileLocation = mapLayers[0].getXYCoords(coords.x, coords.y - 10);
+          var tileLocation = mapLayers[0].getXYCoords(coords.x, coords.y);
           startX = tileLocation.x;
           startY = tileLocation.y;
         });
@@ -215,6 +201,32 @@ THE SOFTWARE.
               if (zoomLevel < 2) {
                 zoomLevel += 0.01;
               }
+            }
+            if (key === 32) {
+              if (currentView === 1) {
+                mapLayers.forEach(function(layer) {
+                  layer.setup({
+                    isometric: false,
+                    tileHeight: 200,
+                    tileWidth: 200
+                  });
+                });
+                currentView = 0;
+              }
+              else {
+                mapLayers.forEach(function(layer) {
+                  layer.setup({
+                    isometric: true,
+                    tileHeight: 100,
+                    tileWidth: 200
+                  });
+                });
+                currentView = 1;                
+              }
+              mapLayers.forEach(function(layer) {
+                layer.align("h-center", CanvasControl().width, xrange, 0);
+                layer.align("v-center", CanvasControl().height, yrange, CanvasControl().height * 2);
+              });
             }
           }
           if (key === 65) {
