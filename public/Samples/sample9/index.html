@@ -46,14 +46,14 @@ THE SOFTWARE.
     require([
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
-      'jsiso/img/ImageLoader',
-      'jsiso/json/loader',
+      'jsiso/img/load',
+      'jsiso/json/load',
       'jsiso/xml/XMLPopulate',
       'jsiso/tile/Field',
       'jsiso/pathfind/pathfind',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, ImageLoader, JsonLoader, XMLPopulate, TileField, pathfind) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, XMLPopulate, TileField, pathfind) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -72,34 +72,20 @@ THE SOFTWARE.
       function launch() {
 
 
-        JsonLoader('sample9.json', function(response){
+        jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
+          imgLoader([{graphics: jsonResponse[1].ground}, {graphics: jsonResponse[1].players}]).then(function(imgResponse) {
 
-          var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
-          var imgLoader = new ImageLoader(); // Used for loading all images used within game
-
-          XML.loadXML('/XMLFiles.php?folder=/game/ground/'); // PHP is used to output a list of images within the directory for easier loading
-          var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
-
-          XML.loadXML('/XMLFiles.php?folder=/players/');
-          var playerImages = imgLoader.loadImageArray(XML.getContent('files','file'), true);
-          var zone;
-
-
-
-          zone = response;
-          imgLoader.onload(function() {
-
-            var game = new main(0, 0, 10, 10, playerImages);  // X & Y drawing position, and tile span to draw 
+            var game = new main(0, 0, 10, 10, imgResponse[1]);  // X & Y drawing position, and tile span to draw 
             
             game.init([{
               title: "Graphics",
-              layout: zone.ground_map,
-              graphics: groundImages.files,
-              graphicsDictionary: groundImages.dictionary, 
+              layout: jsonResponse[0].ground,
+              graphics: imgResponse[0].files,
+              graphicsDictionary: imgResponse[0].dictionary,
               heightMap: {
-                map: zone.ground_height,
+                map: jsonResponse[0].height,
                 offset: 0,
-                heightTile: groundImages.files["blank-block.png"],
+                heightTile: imgResponse[0].files["blank-block.png"],
               },
               tileHeight: 50,
               tileWidth: 100,
@@ -112,9 +98,9 @@ THE SOFTWARE.
             },
             {
               title: "AI",
-              layout: zone.object_map,
+              layout: jsonResponse[0].objects,
               heightMap: {
-                map: zone.ground_height,
+                map: jsonResponse[0].height,
                 offset: 50, // Offset is the same height as the  graphics stack tile
                 heightMapOnTop: true
               },

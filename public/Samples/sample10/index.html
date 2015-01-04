@@ -46,12 +46,11 @@ THE SOFTWARE.
     require([
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
-      'jsiso/img/ImageLoader',
-      'jsiso/json/loader',
+      'jsiso/img/load',
       'jsiso/tile/Field',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, ImageLoader, JsonLoader, TileField, pathfind) {
+    function(CanvasControl, CanvasInput, imgLoader, TileField, pathfind) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -69,15 +68,9 @@ THE SOFTWARE.
 
       function launch() {
 
-        var imgLoader = new ImageLoader(); // Used for loading all images used within tileEngine
-
-        var graphics = imgLoader.loadImageArray([
-          "/img/heightmap.jpg"
-        ], true);
-
-        var objects = imgLoader.loadImageArray([
-          "/img/objects/tree2.png"
-        ], true);
+        var graphics = {
+          graphics: ["/img/heightmap.jpg"]
+        }
 
         var context = CanvasControl.create("canvasImage", 1024, 1024, {
           display: "block",
@@ -85,8 +78,8 @@ THE SOFTWARE.
           marginRight: "auto"
         });
 
-        imgLoader.onload(function() {            
-          context.drawImage(graphics.files[graphics.dictionary[0]], 0, 0);
+        imgLoader([graphics]).then(function(imgResponse) {
+          context.drawImage(imgResponse[0].files[imgResponse[0].dictionary[0]], 0, 0);
           var tileImg = [];
           var shadowColors = [];
           var heightImg = [];
@@ -171,19 +164,6 @@ THE SOFTWARE.
           startX = tileLocation.x;
           startY = tileLocation.y;
         });
-
-        input.mouse_action(function(coords) {
-          for (var i = startX; i < startX + rangeX; i++) {
-            for (var j = startY; j < startY + rangeY; j++) {
-              mapLayers.forEach(function(layer) {
-                var heightDistance = Math.sqrt((Math.floor(i - j) * Math.floor(i - j)) + (Math.floor(j - i) * Math.floor(j - i)));
-                layer.setHeightmapTile(i, j, layer.getHeightMapTile(i, j) + heightDistance/1000); 
-              });
-            }
-          }
-
-        });
-
 
         input.keyboard(function(key, pressed) {
           if (!pressed) {

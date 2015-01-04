@@ -46,12 +46,12 @@ THE SOFTWARE.
     require([
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
-      'jsiso/img/ImageLoader',
-      'jsiso/xml/XMLPopulate',
+      'jsiso/img/load',
+      'jsiso/json/load',
       'jsiso/tile/Field',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -68,38 +68,29 @@ THE SOFTWARE.
 
       function launch() {
 
-        var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
-        var imgLoader = new ImageLoader(); // Used for loading all images used within game
-
-        XML.loadXML('/XMLFiles.php?folder=/ground/'); // PHP is used to output a list of images within the directory for easier loading
-        var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
-
-        XML.loadXML('/XMLFiles.php?folder=/players/');
-        var objectImages = imgLoader.loadImageArray(XML.getContent('files','file'), true);
-
-        XML.loadXML('sample3.xml'); // Load the map 
-
-        imgLoader.onload(function() {
-          var game = new main(0, 0, 10, 10, objectImages);  // X & Y drawing position, and tile span to draw 
-          
-          game.init([{
-            title: "Graphics",
-            layout: XML.getContent('ground_map','row'),
-            graphics: groundImages.files,
-            graphicsDictionary: groundImages.dictionary, 
-            heightMap: {
-              map: XML.getContent('ground_height','row'),
-              offset: 0,
-              heightTile: groundImages.files["blank-block.png"],
-            },
-            tileHeight: 50,
-            tileWidth: 100,
-            shadow: {
-              offset: 20, // Offset is the same height as the stack tile
-              verticalColor: '(5, 5, 30, 0.4)',
-              horizontalColor: '(6, 5, 50, 0.5)'
-            }
-          }])
+        jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
+          imgLoader([{graphics: jsonResponse[1].ground}, {graphics: jsonResponse[1].players}]).then(function(imgResponse) {
+            var game = new main(0, 0, 10, 10, imgResponse[1]);  // X & Y drawing position, and tile span to draw 
+            
+            game.init([{
+              title: "Graphics",
+              layout: jsonResponse[0].ground,
+              graphics: imgResponse[0].files,
+              graphicsDictionary: imgResponse[0].dictionary, 
+              heightMap: {
+                map: jsonResponse[0].height,
+                offset: 0,
+                heightTile: imgResponse[0].files["blank-block.png"],
+              },
+              tileHeight: 50,
+              tileWidth: 100,
+              shadow: {
+                offset: 20, // Offset is the same height as the stack tile
+                verticalColor: '(5, 5, 30, 0.4)',
+                horizontalColor: '(6, 5, 50, 0.5)'
+              }
+            }]);
+          });
         });
       }
       

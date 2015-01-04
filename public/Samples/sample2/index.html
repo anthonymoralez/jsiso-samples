@@ -46,13 +46,13 @@ THE SOFTWARE.
     require([
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
-      'jsiso/img/ImageLoader',
-      'jsiso/xml/XMLPopulate',
+      'jsiso/img/load',
+      'jsiso/json/load',
       'jsiso/tile/Field',
       'jsiso/pathfind/pathfind',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField, pathfind) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField, pathfind) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -70,53 +70,44 @@ THE SOFTWARE.
 
       function launch() {
 
-        var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
-        var imgLoader = new ImageLoader(); // Used for loading all images used within game
-
-        XML.loadXML('/XMLFiles.php?folder=/ground/'); // PHP is used to output a list of images within the directory for easier loading
-        var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
-
-        XML.loadXML('/XMLFiles.php?folder=/players/');
-        var playerImages = imgLoader.loadImageArray(XML.getContent('files','file'), true);
-
-        XML.loadXML('sample2.xml'); // Load the map 
-
-        imgLoader.onload(function () {
-          var game = new main(0, 0, 10, 10, playerImages);  // X & Y drawing position, and tile span to draw 
-            
-          game.init(
-            [{
-              title: "Graphics",
-              layout: XML.getContent('ground_map','row'),
-              graphics: groundImages.files,
-              graphicsDictionary: groundImages.dictionary, 
-              heightMap: {
-                map: XML.getContent('ground_height','row'),
-                offset: 0,
-                heightTile: groundImages.files["blank-block.png"],
+        jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
+          imgLoader([{graphics: jsonResponse[1].ground}, {graphics: jsonResponse[1].players}]).then(function(imgResponse) {
+            var game = new main(0, 0, 10, 10, imgResponse[1]);  // X & Y drawing position, and tile span to draw 
+            console.log("????")
+            game.init(
+              [{
+                title: "Graphics",
+                layout: jsonResponse[0].ground,
+                graphics: imgResponse[0].files,
+                graphicsDictionary: imgResponse[0].dictionary, 
+                heightMap: {
+                  map: jsonResponse[0].height,
+                  offset: 0,
+                  heightTile: imgResponse[0].files["blank-block.png"],
+                },
+                tileHeight: 50,
+                tileWidth: 100,
+                applyInteractions: true,
+                shadow: {
+                  offset: 20, // Offset is the same height as the stack tile
+                  verticalColor: '(5, 5, 30, 0.4)',
+                  horizontalColor: '(6, 5, 50, 0.5)'
+                }
               },
-              tileHeight: 50,
-              tileWidth: 100,
-              applyInteractions: true,
-              shadow: {
-                offset: 20, // Offset is the same height as the stack tile
-                verticalColor: '(5, 5, 30, 0.4)',
-                horizontalColor: '(6, 5, 50, 0.5)'
+              {
+                title: "AI",
+                layout: jsonResponse[0].objects,
+                heightMap: {
+                  map: jsonResponse[0].height,
+                  offset: 20, // Offset is the same height as the  graphics stack tile
+                  heightMapOnTop: true
+                },
+                tileHeight: 50,
+                tileWidth: 100,
+                applyInteractions: true
               }
-            },
-            {
-              title: "AI",
-              layout: XML.getContent('object_map','row'),
-              heightMap: {
-                map: XML.getContent('ground_height','row'),
-                offset: 20, // Offset is the same height as the  graphics stack tile
-                heightMapOnTop: true
-              },
-              tileHeight: 50,
-              tileWidth: 100,
-              applyInteractions: true
-            }
-          ]);
+            ]);
+          });
         });
       }
 
@@ -145,11 +136,9 @@ THE SOFTWARE.
         var input = new CanvasInput(document, CanvasControl());
 
         input.mouse_action(function(coords) {
-          mapLayers.map(function(layer) {
-            tile_coordinates =  layer.applyMouseFocus(coords.x, coords.y); // Get the current mouse location from X & Y Coords
-            layer.setHeightmapTile(tile_coordinates.x, tile_coordinates.y, layer.getHeightMapTile(tile_coordinates.x, tile_coordinates.y) + 1); // Increase heightmap tile 
-            layer.setTile(tile_coordinates.x, tile_coordinates.y, 9); // Force the chaning of tile graphic
-          });
+            tile_coordinates =  mapLayers[0].applyMouseFocus(coords.x, coords.y); // Get the current mouse location from X & Y Coords
+            mapLayers[0].setHeightmapTile(tile_coordinates.x, tile_coordinates.y, mapLayers[0].getHeightMapTile(tile_coordinates.x, tile_coordinates.y) + 1); // Increase heightmap tile 
+            mapLayers[0].setTile(tile_coordinates.x, tile_coordinates.y, 9); // Force the chaning of tile graphic
         });
 
         input.mouse_move(function(coords) {

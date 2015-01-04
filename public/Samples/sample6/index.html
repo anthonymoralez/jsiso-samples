@@ -48,7 +48,6 @@ THE SOFTWARE.
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
       'jsiso/img/load',
-      'jsiso/xml/XMLPopulate',
       'jsiso/json/load',
       'jsiso/tile/Field',
       'jsiso/tile/Camera',
@@ -57,7 +56,7 @@ THE SOFTWARE.
       'jsiso/utils',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, imgLoader, XMLPopulate, jsonLoader, TileField, Camera, pathfind, Emitter, utils) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField, Camera, pathfind, Emitter, utils) {
 
 
       // -- FPS --------------------------------
@@ -75,7 +74,6 @@ THE SOFTWARE.
 
 
       function launch() {
-        var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
         var tileImages = {
           graphics: [
             "/img/platform/Wall 1 NE.png",
@@ -106,14 +104,13 @@ THE SOFTWARE.
             "/img/platform/char.png"
           ]
         };
-        XML.loadXML('sample6.xml'); // Load the map 
-          jsonLoader(['sample6Particles.json']).then(function(particles) {
+          jsonLoader(['map.json', 'sample6Particles.json']).then(function(jsonResponse) {
             imgLoader([tileImages, charImages]).then(function(response) {
 
-              var game = new main(0, 0, XML.getContent('field_one','row').length * 40, XML.getContent('field_one','row')[0].length * 40, 40, 40, particles[0], response[1]);  // X & Y drawing position, and tile span to draw 
+              var game = new main(0, 0, jsonResponse[0].platform.length * 40, jsonResponse[0].platform[0].length * 40, 40, 40, jsonResponse[1], response[1]);  // X & Y drawing position, and tile span to draw 
               game.init([{
                 title: "Platform Layer",
-                layout: XML.getContent('field_one','row'),
+                layout: jsonResponse[0].platform,
                 graphics: response[0].files,
                 graphicsDictionary: response[0].dictionary, 
                 isometric: false, // Flag used to layout grid in non Isometric format
@@ -123,7 +120,7 @@ THE SOFTWARE.
               },
               {
                 title: "Diamond Layer",
-                layout: XML.getContent('field_two','row'),
+                layout: jsonResponse[0].gems,
                 graphics: response[0].files,
                 graphicsDictionary: response[0].dictionary, 
                 isometric: false, // Flag used to layout grid in non Isometric format

@@ -67,14 +67,14 @@ THE SOFTWARE.
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
       'jsiso/img/load',
-      'jsiso/xml/XMLPopulate',
+      'jsiso/json/load',
       'jsiso/tile/Field',
       'jsiso/pathfind/pathfind',
       'jsiso/particles/EffectLoader',
       'jsiso/utils',
       'game/Clock'
     ],
-    function(CanvasControl, CanvasInput, imgLoader, XMLPopulate, TileField, pathfind, EffectLoader, utils, Clock) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField, pathfind, EffectLoader, utils, Clock) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -92,153 +92,74 @@ THE SOFTWARE.
 
       function launch() {
 
-        var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
+        jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
 
-        var groundImages = [
-          "/img/ground/1-grass-1.png",
-          "/img/ground/1-grass-2.png",
-          "/img/ground/1-grass-3.png",
-          "/img/ground/1-grass-4.png",
-          "/img/ground/1-grass-5.png",
-          "/img/ground/1-grass-6.png",
-          "/img/ground/1-grass-7.png",
-          "/img/ground/1-grass-8.png",
-          "/img/ground/2-blue-tiles.png",
-          "/img/ground/blank-block.png",
-          "/img/ground/hole.png",
-          "/img/ground/land.png",
-          "/img/ground/marsh.png",
-          "/img/ground/path-outdoor.png",
-          "/img/ground/rock-ground.png",
-          "/img/ground/sand.png",
-          "/img/ground/swamp.png",
-          "/img/ground/water-purple.png",
-          "/img/ground/water.png"
-        ];
-        var objectImages = [
-          "/img/objects/$1-wall-0001.png",
-          "/img/objects/$1-wall-0010.png",
-          "/img/objects/$1-wall-0011.png",
-          "/img/objects/$1-wall-0110.png",
-          "/img/objects/$1-wall-1001.png",
-          "/img/objects/$1-wall-1100.png",
-          "/img/objects/$1-wall-1111.png",
-          "/img/objects/1-barrel1.png",
-          "/img/objects/1-barrel2.png",
-          "/img/objects/2-chair1.png",
-          "/img/objects/7-normal.png",
-          "/img/objects/8-garden.png",
-          "/img/objects/9-museum.png",
-          "/img/objects/10-chair2.png",
-          "/img/objects/11-tree.png",
-          "/img/objects/arch-1.png",
-          "/img/objects/arch-p1.png",
-          "/img/objects/archP1.png",
-          "/img/objects/book-case.png",
-          "/img/objects/bookcase.png",
-          "/img/objects/bookcase2.png",
-          "/img/objects/bookcase3.png",
-          "/img/objects/bookcase4.png",
-          "/img/objects/bookcase5.png",
-          "/img/objects/candle1.png",
-          "/img/objects/chair2.png",
-          "/img/objects/chair3.png",
-          "/img/objects/coalFire.png",
-          "/img/objects/door.png",
-          "/img/objects/emptyFire.png",
-          "/img/objects/floor1.png",
-          "/img/objects/magic-stone.png",
-          "/img/objects/normal-table.png",
-          "/img/objects/prison1.png",
-          "/img/objects/prisondoor.png",
-          "/img/objects/short-wall1.png",
-          "/img/objects/sign.png",
-          "/img/objects/table.png",
-          "/img/objects/table2.png",
-          "/img/objects/table3.png",
-          "/img/objects/towel1.png",
-          "/img/objects/tree2.png",
-          "/img/objects/treestump.png",
-          "/img/objects/wall2.png",
-          "/img/objects/wall4.png",
-          "/img/objects/wallC1.png",
-          "/img/objects/well1.png",
-          "/img/objects/window1.png"
-        ];
-        var playerImages = [
-          "/img/players/enemy1.png",
-          "/img/players/enemy2.png",
-          "/img/players/enemy3.png",
-          "/img/players/main.png"
-        ];
-
-        var images = [
-          {
-            graphics: groundImages,
-          },
-          {
-            graphics: objectImages,
-          },
-          {
-            graphics: playerImages
-          }
-        ];
-
-        XML.loadXML('sample0.xml');
-
-        imgLoader(images).then(function(response) {
-          var tileEngine = new main(0, 0, 14, 14, response[2]);
-          tileEngine.init([
+          var images = [
             {
-              title: "Ground Layer",
-              layout: XML.getContent('ground_map','row'),
-              graphics: response[0].files,
-              graphicsDictionary: response[0].dictionary,
-              shadowDistance: {
-                color: '0, 0, 33',
-                distance: 4,
-                darkness: 1
-              },
-              shadow: {
-                offset: 20,
-                verticalColor: 'rgba(5, 5, 30, 0.4)',
-               horizontalColor: 'rgba(6, 5, 50, 0.5)'
-              },
-              lightMap: [[5, 5, 4, 1], [20, 20, 4, 1]],
-              heightMap: {
-                map: XML.getContent('ground_height','row'),
-                offset: 0,
-                heightTile: response[0].files["blank-block.png"]
-              },
-              tileHeight: 50,
-              tileWidth: 100
+              graphics: jsonResponse[1].groundImages,
             },
             {
-              title: "Object Layer",
-              layout: XML.getContent('object_map','row'),
-              graphics: response[1].files,
-              graphicsDictionary: response[1].dictionary,
-              tileHeight: 50,
-              tileWidth: 100,
-              zeroIsBlank: true,
-              alphaWhenFocusBehind: {
-                objectApplied: response[2].files["main.png"],
-                apply: true
-              },
-              shadowDistance: {
-                color: false,
-                distance: 4,
-                darkness: 1
-              },
-              particleMap: XML.getContent('particle_map','row'),
-              lightMap: [[5, 5, 4, 1], [20, 20, 4, 1]],
-              heightMap: {
-                map: XML.getContent('ground_height','row'),
-                offset: 20,
-                heightMapOnTop: true
-              }
+              graphics: jsonResponse[1].objectImages,
+            },
+            {
+              graphics: jsonResponse[1].playerImages
             }
-          ]);
+          ];
+
+          imgLoader(images).then(function(imgResponse) {
+            var tileEngine = new main(0, 0, 14, 14, imgResponse[2]);
+            tileEngine.init([
+              {
+                title: "Ground Layer",
+                layout: jsonResponse[0].ground,
+                graphics: imgResponse[0].files,
+                graphicsDictionary: imgResponse[0].dictionary,
+                shadowDistance: {
+                  color: '0, 0, 33',
+                  distance: 4,
+                  darkness: 1
+                },
+                shadow: {
+                  offset: 20,
+                  verticalColor: 'rgba(5, 5, 30, 0.4)',
+                  horizontalColor: 'rgba(6, 5, 50, 0.5)'
+                },
+                lightMap: [[5, 5, 4, 1], [20, 20, 4, 1]],
+                heightMap: {
+                  map: jsonResponse[0].height,
+                  offset: 0,
+                  heightTile: imgResponse[0].files["blank-block.png"]
+                },
+                tileHeight: 50,
+                tileWidth: 100
+              },
+              {
+                title: "Object Layer",
+                layout: jsonResponse[0].objects,
+                graphics: imgResponse[1].files,
+                graphicsDictionary: imgResponse[1].dictionary,
+                zeroIsBlank: true,
+                alphaWhenFocusBehind: {
+                  objectApplied: imgResponse[2].files["main.png"],
+                  apply: true
+                },
+                shadowDistance: {
+                  color: false,
+                  distance: 4,
+                  darkness: 1
+                },
+                particleMap: jsonResponse[0].particles,
+                lightMap: [[5, 5, 4, 1], [20, 20, 4, 1]],
+                heightMap: {
+                  map: jsonResponse[0].height,
+                  offset: 20,
+                  heightMapOnTop: true
+                },
+                tileHeight: 50,
+                tileWidth: 100
+              }
+            ]);
+          });
         });
       }
 

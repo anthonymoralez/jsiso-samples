@@ -46,13 +46,13 @@ THE SOFTWARE.
     require([
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
-      'jsiso/img/ImageLoader',
-      'jsiso/json/loader',
-      'jsiso/json/tiledToJsiso',
+      'jsiso/img/load',
+      'jsiso/json/load',
       'jsiso/tile/Field',
+      'jsiso/pathfind/pathfind',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, ImageLoader, jsonLoader, tiledToJsiso, TileField) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField, pathfind) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -70,44 +70,33 @@ THE SOFTWARE.
 
       function launch() {
 
-      var imgLoader = new ImageLoader(); // Used for loading all images used within tileEngine
-      var zone = null;
+        jsonLoader(['tiled-json.json']).then(function(jsonResponse) {
 
-      jsonLoader('tiled-desert.json', function(zone){
-        jsonLoader('particles.json', function(particleJSON){
-          imgLoader.loadImageArray([
-            "/img/tmw_desert_spacing.png"
-          ], true, {
-            width: zone.tilesets[0].tilewidth, 
-            height: zone.tilesets[0].tileheight, 
-            offsetX: 0,
-            offsetY: 0,
-            spacing: 1
-          });
+          var images = [
+            {
+              graphics: ["/img/isometric_grass_and_water.png"],
+              spritesheet: {
+                width: jsonResponse[0].tilesets[0].tilewidth,
+                height: jsonResponse[0].tilesets[0].tileheight,
+                firstgid: jsonResponse[0].tilesets[0].firstgid,
+                offsetX: 0,
+                offsetY: 0
+              }
+            }
+          ];
 
-          imgLoader.onload(function(images){
-            var tileEngine = new main(0, 0, zone.height, zone.width);
+          imgLoader(images).then(function(imgResponse) {
 
+            var tileEngine = new main(0, 0, jsonResponse[0].height, jsonResponse[0].width);
             tileEngine.init([{
-                layout: zone.layers[0].data,
-                graphics: images.files,
-                graphicsDictionary: images.dictionary,
-                tileWidth: 32,
-                tileHeight: 32,
-                width: zone.layers[0].width,
-                height: zone.layers[0].height,
-                zeroIsBlank: true,
-                isometric: false,
-                shadowDistance: {
-                  color: '0, 0, 33',
-                  distance: 7,
-                  darkness: 0.95
-                },
-                particleEffects: particleJSON,
-                particleMap: [],
-                lightmap: []
-              }]);
-            });
+              layout: jsonResponse[0].layers[0].data,
+              graphics: imgResponse[0].files,
+              graphicsDictionary: imgResponse[0].dictionary,
+              tileWidth: 32,
+              tileHeight: 16,
+              width: jsonResponse[0].layers[0].width,
+              height: jsonResponse[0].layers[0].height
+            }]);
           });
         });
       }
@@ -116,46 +105,11 @@ THE SOFTWARE.
       function main(x, y, xrange, yrange) {
 
         var mapLayers = [];
-        var lightmap = [];
 
-        var context = CanvasControl.create("canvas", 1400, 700, {
-          background: "#000013",
+        var context = CanvasControl.create("canavas", 1400, 700, {
           display: "block",
           marginLeft: "auto",
           marginRight: "auto"
-        });
-        CanvasControl.fullScreen();
-        var input = new CanvasInput(document, CanvasControl());
-
-        input.mouse_move(function(coords) {
-          mapLayers.map(function(layer) {
-            var t = layer.applyMouseFocus(coords.x, coords.y); // Apply mouse rollover via mouse location X & Y
-            layer.setLight(t.x, t.y);
-          });
-        }); 
-
-        input.mouse_action(function(coords) {
-          mapLayers.map(function(layer) {
-            var t = layer.applyMouseFocus(coords.x, coords.y); // Apply mouse rollover via mouse location X & Y
-            layer.setParticlemapTile(t.x, t.y, "fire");
-            lightmap.push([t.x, t.y, 6, 1]);
-            layer.setLightmap(lightmap);
-          });
-        });
-
-        input.keyboard(function(pressed) {
-          switch(pressed) {
-            case 65:
-              mapLayers.map(function(layer) {
-                layer.setZoom("out");
-              });
-            break;
-            case 83:
-              mapLayers.map(function(layer) {
-                layer.setZoom("in");
-              })
-            break;
-          }
         });
         
         function draw() {
@@ -167,7 +121,6 @@ THE SOFTWARE.
               });
             }
           }
-          requestAnimationFrame(draw);
         }
 
         return {
@@ -175,9 +128,13 @@ THE SOFTWARE.
             for (var i = 0; i < 0 + layers.length; i++) {
               mapLayers[i] = new TileField(context, CanvasControl().height, CanvasControl().width);
               mapLayers[i].setup(layers[i]);
+
               // -- Flip and rotate to match the Tiled draw method --
               mapLayers[i].flip("horizontal");
               mapLayers[i].rotate("left");
+
+              mapLayers[i].align("h-center", CanvasControl().width, xrange, 0);
+              mapLayers[i].align("v-center", CanvasControl().height, yrange, 0);
             };
             draw();
           }

@@ -1,6 +1,6 @@
 <!--
 /*  
-Copyright (c) 2013 Iain Hamilton & Edward Smyth
+Copyright (c) 2013 Iain Hamilton
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. 
 
 - Author : Iain M Hamilton - <iain@beakable.com> - http://www.beakable.com
-           Edward Smyth
 
   Twitter: @beakable
 
@@ -37,6 +36,7 @@ THE SOFTWARE.
       .twitter-follow-button {
         position: absolute !important;
       }
+
       body{
         padding: 0;
         margin: 0;
@@ -44,7 +44,7 @@ THE SOFTWARE.
     </style>
     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
     
-
+    <!-- Engine Scripts -->
     <script data-main="/js/config.js" src="/js/requirejs/require.js"></script>
 
     <script type="text/javascript">
@@ -52,13 +52,13 @@ THE SOFTWARE.
       require([
         'jsiso/canvas/Control',
         'jsiso/canvas/Input',
-        'jsiso/img/ImageLoader',
-        'jsiso/xml/XMLPopulate',
+        'jsiso/img/load',
+        'jsiso/json/load',
         'jsiso/tile/Field',
         'requirejs/domReady!'
       ],
-        
-      function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField) {
+      
+      function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField) {
 
         // -- FPS --------------------------------
         window.requestAnimFrame = (function() {
@@ -73,28 +73,22 @@ THE SOFTWARE.
         })();
         // ---------------------------------------
 
-
+        
         function launch() {
 
-          var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
-          var imgLoader = new ImageLoader(); // Used for loading all images used within game
-
-          XML.loadXML('/XMLFiles.php?folder=/snakeiso/'); // PHP is used to output a list of images within the directory for easier loading
-          var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'), true);
-
-          XML.loadXML('sample7.xml'); // Load the map 
-
-          imgLoader.onload(function() {
-            var game = new main(0, 0, 20, 18, groundImages.files);  // X & Y drawing position, and tile span to draw 
-            game.init([{
-              title: "LayerOne",
-              layout: XML.getContent('field_one','row'),
-              graphics: groundImages.files,
-              graphicsDictionary: groundImages.dictionary, 
-              isometric: true, // Flag used to layout grid in isometric format
-              tileHeight: 17,
-              tileWidth: 34
-            }]);
+          jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
+            imgLoader([{graphics: jsonResponse[1].game}]).then(function(imgResponse) {
+              var game = new main(0, 0, 20, 18, imgResponse[0].files);  // X & Y drawing position, and tile span to draw 
+              game.init([{
+                title: "LayerOne",
+                layout: jsonResponse[0].game,
+                graphics: imgResponse[0].files,
+                graphicsDictionary: imgResponse[0].dictionary, 
+                isometric: false, // Flag used to layout grid in non isometric format
+                tileHeight: 25,
+                tileWidth: 25
+              }]);
+            });
           });
         }
 
@@ -112,7 +106,7 @@ THE SOFTWARE.
             y: 12
           } // Defaut point position
 
-          var context = CanvasControl.create("canavas", 680, 450, {
+          var context = CanvasControl.create("canavas", 500, 450, {
             display: "block",
             marginLeft: "auto",
             marginRight: "auto"
@@ -199,7 +193,7 @@ THE SOFTWARE.
                 drawOverwrite = false;
                 playerSnake.map(function(piece){
                   if (piece.x === i && piece.y === j) {
-                     mapLayers[0].draw(i, j, graphics["1-blank.png"]); // If tile location is equal to a snake body piece send an overwrite image
+                     mapLayers[0].draw(i, j, graphics["1-blank.jpg"]); // If tile location is equal to a snake body piece send an overwrite image
                      drawOverwrite = true;
                   }
                 });
@@ -212,7 +206,7 @@ THE SOFTWARE.
                 }
               }
             }
-            context.font = "22px Georgia";
+            context.font="22px Georgia";
             context.fillText(score, 27, 44);
             requestAnimFrame(draw);
           }
@@ -238,7 +232,7 @@ THE SOFTWARE.
           }
         }
 
-        launch(); 
+        launch();
 
       });
     </script>

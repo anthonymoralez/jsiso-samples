@@ -66,15 +66,15 @@ THE SOFTWARE.
     require([
       'jsiso/canvas/Control',
       'jsiso/canvas/Input',
-      'jsiso/img/ImageLoader',
-      'jsiso/xml/XMLPopulate',
+      'jsiso/img/load',
+      'jsiso/json/load',
       'jsiso/tile/Field',
       'jsiso/pathfind/pathfind',
       'jsiso/particles/EffectLoader',
       'jsiso/utils',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, ImageLoader, XMLPopulate, TileField, pathfind, EffectLoader, utils) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField, pathfind, EffectLoader, utils) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -97,39 +97,26 @@ THE SOFTWARE.
 
 
       function launch() {
-
-        var XML = new XMLPopulate(); // Used for loading the XML maps TODO: Change maps to JSON rather than XML
-        var imgLoader = new ImageLoader(); // Used for loading all images used within game
-
-        XML.loadXML('/XMLFiles.php?folder=/sample1Img/'); // PHP is used to output a list of images within the directory for easier loading
-        var groundImages = imgLoader.loadImageArray(XML.getContent('files', 'file'));
-
-        var loadTimer = setInterval(loadAll, 100);
-
-        function loadAll() {
-          if (imgLoader.loaded === imgLoader.loading) {
-            XML.loadXML('sample1.xml');// Load the map 
-
-            clearInterval(loadTimer);
+        jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
+          imgLoader([{graphics: jsonResponse[1].images}]).then(function(imgResponse) {
             var game = new main(0, 0, 14, 14);  // X & Y drawing position, and tile span to draw 
-            
             game.init([{
               Title: "Graphics",
-              layout: XML.getContent('ground_map','row'),
-              graphics: groundImages.files,
-              graphicsDictionary: groundImages.dictionary, 
+              layout: jsonResponse[0].ground,
+              graphics: imgResponse[0].files,
+              graphicsDictionary: imgResponse[0].dictionary, 
               heightMap: {
-                map: XML.getContent('ground_height','row'),
+                map: jsonResponse[0].height,
                 offset: -80,
-                heightTile: groundImages.files["ground.png"]
+                heightTile: imgResponse[0].files["ground.png"]
               },
               tileHeight: 50,
               tileWidth: 100,
               zeroIsBlank: true
             }])
-          }
-        }
-        addTilesToHUD("Graphics", groundImages.dictionary, 1);
+            addTilesToHUD("Graphics", imgResponse[0].dictionary, 1);            
+          });
+        });
       }
 
       function tileChoice(layer, tile) {

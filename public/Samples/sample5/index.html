@@ -38,7 +38,7 @@ THE SOFTWARE.
       }
     </style>
     <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-    
+
     <script data-main="/js/config.js" src="/js/requirejs/require.js"></script>
 
     <script type="text/javascript">
@@ -49,10 +49,9 @@ THE SOFTWARE.
       'jsiso/img/load',
       'jsiso/json/load',
       'jsiso/tile/Field',
-      'jsiso/pathfind/pathfind',
       'requirejs/domReady!'
     ],
-    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField, pathfind) {
+    function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField) {
 
       // -- FPS --------------------------------
       window.requestAnimFrame = (function() {
@@ -67,79 +66,71 @@ THE SOFTWARE.
       })();
       // ---------------------------------------
 
-
       function launch() {
 
-        jsonLoader(['tiled-json.json']).then(function(jsonResponse) {
-
-          var images = [
-            {
-              graphics: ["/img/isometric_grass_and_water.png"],
-              spritesheet: {
-                width: jsonResponse[0].tilesets[0].tilewidth,
-                height: jsonResponse[0].tilesets[0].tileheight,
-                firstgid: jsonResponse[0].tilesets[0].firstgid,
-                offsetX: 0,
-                offsetY: 0
-              }
-            }
-          ];
-
-          imgLoader(images).then(function(imgResponse) {
-
-            var tileEngine = new main(0, 0, jsonResponse[0].height, jsonResponse[0].width);
-            tileEngine.init([{
-              layout: jsonResponse[0].layers[0].data,
+        jsonLoader(['map.json', 'imageFiles.json']).then(function(jsonResponse) {
+          imgLoader([{graphics: jsonResponse[1].images}]).then(function(imgResponse) {
+            var game = new main(0, 0, 8, 8);  // X & Y drawing position, and tile span to draw 
+              
+            game.init([{
+              title: "LayerOne",
+              layout: jsonResponse[0].field,
               graphics: imgResponse[0].files,
-              graphicsDictionary: imgResponse[0].dictionary,
-              tileWidth: 32,
-              tileHeight: 16,
-              width: jsonResponse[0].layers[0].width,
-              height: jsonResponse[0].layers[0].height
-            }]);
+              graphicsDictionary: imgResponse[0].dictionary, 
+              isometric: false, // Flag used to layout grid in non isometric format
+              tileHeight: 80,
+              tileWidth: 80,
+              applyInteractions: true
+            }])
           });
         });
       }
 
-
       function main(x, y, xrange, yrange) {
-
+        
         var mapLayers = [];
 
-        var context = CanvasControl.create("canavas", 1400, 700, {
+        var context = CanvasControl.create("canavas", 640, 640, {
           display: "block",
           marginLeft: "auto",
           marginRight: "auto"
         });
-        
+
+
+        var input = new CanvasInput(document, CanvasControl());
+
+        input.mouse_action(function(coords) {
+          mapLayers.map(function(layer) {
+            tile_coordinates =  layer.applyMouseFocus(coords.x, coords.y); // Get the current mouse location from X & Y Coords
+            layer.setTile(tile_coordinates.x, tile_coordinates.y, 4); // Force the chaning of tile graphic
+          });
+        });
+
+        input.mouse_move(function(coords) {
+          mapLayers.map(function(layer) {
+            tile_coordinates = layer.applyMouseFocus(coords.x, coords.y); // Apply mouse rollover via mouse location X & Y
+          });
+        }); 
+
         function draw() {
           context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
-          for (var i = 0; i < 0 + yrange; i++) {
-            for (var j = 0; j < 0 + xrange; j++) {
-              mapLayers.map(function(layer) {
-                layer.draw(i,j);
-              });
+          for (i = x; i < 0 + xrange; i++) {
+            for (j = y; j < 0 + yrange; j++) {
+              mapLayers[0].draw(i,j);
             }
           }
+          requestAnimFrame(draw);
         }
-
+        
         return {
           init: function(layers) {
             for (var i = 0; i < 0 + layers.length; i++) {
               mapLayers[i] = new TileField(context, CanvasControl().height, CanvasControl().width);
               mapLayers[i].setup(layers[i]);
-
-              // -- Flip and rotate to match the Tiled draw method --
-              mapLayers[i].flip("horizontal");
-              mapLayers[i].rotate("left");
-
-              mapLayers[i].align("h-center", CanvasControl().width, xrange, 0);
-              mapLayers[i].align("v-center", CanvasControl().height, yrange, 0);
             };
             draw();
           }
-        }  
-
+        }
       }
 
       launch();
