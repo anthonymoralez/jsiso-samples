@@ -115,13 +115,14 @@ THE SOFTWARE.
             {
               title: "Bounds Layer",
               layout: zone.layers[1].data,
-              graphics: response[0].files,
-              graphicsDictionary: response[0].dictionary,
+              graphics: response[2].files,
+              graphicsDictionary: response[2].dictionary,
               tileWidth: 30,
               tileHeight: 30,
               width: zone.layers[0].width,
               height: zone.layers[0].height,
-              isometric: false
+              isometric: false,
+              zeroIsBlank: true
             }
           ]);
         });
@@ -149,32 +150,50 @@ THE SOFTWARE.
     var xyMapOffset;
 
     var enemies = [];
+    var enemyPath = [];
     var clearedEmenies = 0;
 
     var towers = []
 
     var input = new CanvasInput(document, CanvasControl());
 
-    input.mouse_move(function(coords) {
+    function Tower(x, y) {
+      var tileX = x;
+      var tileY = y;
+      var target = null;
       var offset = mapLayers[0].getOffset();
-      var t = mapLayers[0].applyMouseFocus(coords.x - offset.x, coords.y - offset.y); // Apply mouse rollover via mouse location X & Y
-      mapLayers[0].setLight(t.x, t.y);
-      cameraPosition = playerCamera.setFocus(t.x, t.y, rangeX, rangeY);
-      document.title = t.x + " - " + t.y;
-    }); 
 
-    input.mouse_action(function(coords) {
-      var offset = mapLayers[1].getOffset();
-      var t = mapLayers[1].applyMouseFocus(coords.x - offset.x, coords.y - offset.y); // Apply mouse rollover via mouse location X & Y
-      //mapLayers[1].setTile(t.x, t.y, 1);
-      //towers.push(new Tower(t.x, t.y));
-      enemies[0].setGoToX(t.x);
-      enemies[0].setGoToY(t.y);
-    });
+      return {
+        shoot: function() {
+          if (target && target.getHealth() > 0) {
+            if (Math.pow(target.getY() - tileY, 2) + Math.pow(target.getX() - tileX, 2) < 12) {
+              context.beginPath();
+              context.strokeStyle = '#006699';
+              context.lineWidth = 4;
+              context.moveTo(tileX * 30 + offset.x + 16, tileY * 30 + offset.y - 17);
+              context.lineTo(target.getX() * 30 + offset.x, target.getY() * 30 + offset.y);
+              context.stroke();
+              target.damage(2);
+            }
+            else {
+              target = null;
+            }
+          }
+          else {
+            enemies.forEach(function(enemy) {
+              if (Math.pow(enemy.getY() - tileY, 2) + Math.pow(enemy.getX() - tileX, 2) < 12) {
+                target = enemy;
+              }
+            });
+          }
+        }
+      }
+    }
+
 
     function Enemy(position) {
       var tileX = 5;
-      var tileY = 3;
+      var tileY = 0 - position;
       var nextX = null;
       var nextY = null;
       var xpos = tileX * tileWidth;
@@ -184,11 +203,10 @@ THE SOFTWARE.
       var charF = Math.floor(Math.random()*4);
       var movementFrameTimer = Math.floor(Math.random()*8);
       var drawRabbit = false;
-      var id = position;
       var health = 100;
       var moveTicks = 0;
+      var currentPos = 0;
 
-      var path = [];
 
       function _resetPos() {
         tileY = 0 - position;
@@ -197,6 +215,7 @@ THE SOFTWARE.
         ypos = tileY * tileHeight;
         drawRabbit = false;
         health = 100;
+        currentPos = 0;
       }
 
       return {
@@ -220,15 +239,6 @@ THE SOFTWARE.
         },
         move: function() {
           moveTicks++;
-          if (nextX && nextY) {
-            pathfind(position, [tileX, tileY], [nextX, nextY], mapLayers[1].getLayout(), true, false).then(function (data) { 
-              if (data.length > 0 && data[1] !== undefined) {
-                path = data;
-                nextX = null;
-                nextY = null;
-              }
-            });
-          }
 
           movementFrameTimer ++;
           if (movementFrameTimer >= 7) {
@@ -239,30 +249,43 @@ THE SOFTWARE.
             movementFrameTimer = 0;
           }
 
-          if (tileY >= 0) {
+          if (tileY >= 0 && tileY !== 19 & health > 0) {
             drawRabbit = true;
           }
-          if (path.length) {
-            if (path[0].y > tileY) {
-              ypos += speed;
-              directionFrame = 0; 
-            }
-            if (path[0].y < tileY) {
-              ypos -= speed;
-              directionFrame = 4; 
-            }
-            if (path[0].x > tileX) {
-              xpos += speed;
-              directionFrame = 12;
-            }
-            if (path[0].x < tileX) {
-              xpos -= speed;
-              directionFrame = 8;
-            }
-            if (path[0].x === tileX && path[0].y === tileY) {
-              path.shift();
+          if (tileY < 0) {
+            ypos += speed;
+            directionFrame = 0;             
+          }
+          else {
+            if (drawRabbit === true) {
+              if (currentPos < enemyPath.length) {
+                if (enemyPath[currentPos].y > tileY) {
+                  ypos += speed;
+                  directionFrame = 0; 
+                }
+                if (enemyPath[currentPos].y < tileY) {
+                  ypos -= speed;
+                  directionFrame = 4; 
+                }
+                if (enemyPath[currentPos].x > tileX) {
+                  xpos += speed;
+                  directionFrame = 12;
+                }
+                if (enemyPath[currentPos].x < tileX) {
+                  xpos -= speed;
+                  directionFrame = 8;
+                }
+                if (enemyPath[currentPos].x === tileX && enemyPath[currentPos].y === tileY) {
+                  currentPos ++;
+                }
+              }
+              else {
+                clearedEmenies ++;
+                drawRabbit = false;
+              }
             }
           }
+
           var pos = mapLayers[0].getXYCoords(xpos, ypos);
           tileX = pos.x;
           tileY = pos.y;
@@ -280,28 +303,24 @@ THE SOFTWARE.
         },
         getHealth: function() {
           return health;
-        },
-        id: id
+        }
       }
     }
 
-    enemies.push(new Enemy(0));
 
-    function draw() {
-      var i, j, k;
+    function _draw() {
+      var i, j, k, e;
 
       context.clearRect(0, 0, window.innerWidth, window.innerHeight);
       for ( j = 0; j < rangeY; j++) {
         for ( i = 0; i < rangeX; i++) {
           mapLayers[0].draw(i, j);
-          mapLayers[1].draw(i ,j);
+          mapLayers[1].draw(i, j);
         }
       }
-      for (var e = 0; e < enemies.length; e++) {
-          enemies[e].draw();
-      }
-      for (k = 0; k < enemies.length; k++) {
-        enemies[k].move();
+      for (e = 0; e < enemies.length; e++) {
+        enemies[e].draw();
+        enemies[e].move();
       }
       for (k = 0; k < towers.length; k++) {
         towers[k].shoot();
@@ -312,8 +331,35 @@ THE SOFTWARE.
           enemies[k].resetPos();
         }
       }
-      requestAnimationFrame(draw);
+      requestAnimationFrame(_draw);
     }
+
+    function _init() {
+      input.mouse_move(function(coords) {
+        var offset = mapLayers[0].getOffset();
+        var t = mapLayers[0].applyMouseFocus(coords.x - offset.x, coords.y - offset.y); // Apply mouse rollover via mouse location X & Y
+        cameraPosition = playerCamera.setFocus(t.x, t.y, rangeX, rangeY);
+      }); 
+
+      input.mouse_action(function(coords) {
+        var offset = mapLayers[1].getOffset();
+        var t = mapLayers[1].applyMouseFocus(coords.x - offset.x, coords.y - offset.y); // Apply mouse rollover via mouse location X & Y
+        mapLayers[1].setTile(t.x, t.y, 1);
+        towers.push(new Tower(t.x, t.y));
+      });    
+
+      pathfind(0, [4, 0], [36, 19], mapLayers[1].getLayout(), true, false).then(function (data) { 
+        enemyPath = data;
+        enemies.push(new Enemy(0));
+        enemies.push(new Enemy(3));
+        enemies.push(new Enemy(6));
+        enemies.push(new Enemy(9));
+        enemies.push(new Enemy(12));
+        enemies.push(new Enemy(15));
+      });
+
+    }
+
 
     return {
 
@@ -330,7 +376,8 @@ THE SOFTWARE.
         startX = cameraPosition.startX;
         charX = cameraPosition.pinFocusX;
         charY = cameraPosition.pinFocusY;
-        draw();
+        _init();
+        _draw();
       }
     };
   }
